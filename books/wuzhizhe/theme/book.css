@@ -368,8 +368,36 @@ body {
 }
 
 /* ── 翻页导航 ──────────────────────────────────────────────────────────── */
+/* 章末只留翻页：底部一对圆钮，所有宽度都显示（桌面两侧另有悬浮箭头） */
 .nav-wrapper {
-  display: none !important; /* 桌面不用底部那排卡片 */
+  display: flex !important;
+  justify-content: center;
+  gap: 18px;
+  margin: 40px 0 0;
+  border: 0;
+  max-width: none;
+}
+
+.nav-wrapper .mobile-nav-chapters {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line) !important;
+  border-radius: 50%;
+  background: transparent !important;
+  opacity: 0.8;
+}
+
+.nav-wrapper .mobile-nav-chapters:hover {
+  opacity: 1;
+  border-color: var(--accent-dim) !important;
+}
+
+.nav-wrapper .mobile-nav-chapters i {
+  font-size: 17px;
+  line-height: 1;
 }
 
 .nav-chapters,
@@ -400,37 +428,13 @@ body {
   text-decoration: none;
 }
 
-/* 窄屏：两侧固定箭头容易压字，改用底部一对圆钮 */
+/* 窄屏：两侧固定箭头容易压字，只留底部那对圆钮 */
 @media (max-width: 1080px) {
   .nav-chapters {
     display: none !important;
   }
   .nav-wrapper {
-    display: flex !important;
-    justify-content: center;
-    gap: 18px;
     margin: 34px 0 0;
-    border: 0;
-    max-width: none;
-  }
-  .mobile-nav-chapters {
-    width: 46px;
-    height: 46px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--line) !important;
-    border-radius: 50%;
-    background: transparent !important;
-    opacity: 0.8;
-  }
-  .mobile-nav-chapters:hover {
-    opacity: 1;
-    border-color: var(--accent-dim) !important;
-  }
-  .mobile-nav-chapters i {
-    font-size: 17px;
-    line-height: 1;
   }
 }
 
@@ -914,14 +918,7 @@ a.wzz-nav {
   color: var(--muted);
 }
 
-/* 章节页（阅读中）：只留一个出口，轻到不打断正文 */
-.wzz-foot-mini {
-  margin: 62px 0 0;
-  padding-top: 22px;
-  border-top: 1px solid var(--line);
-  text-align: center;
-}
-
+/* 章节页不注入页脚：读到底只有翻页。这里只描述扉页那一份 */
 /* 扉页（书的门面）：这里才放版权与 AI 声明 */
 .wzz-foot-front {
   margin: 84px 0 4px;
@@ -1021,9 +1018,6 @@ a.wzz-nav {
     top: 48px;
     padding: 7px 13px 7px 11px;
     font-size: 12px;
-  }
-  .wzz-foot-mini {
-    margin-top: 46px;
   }
   .wzz-foot-front {
     margin-top: 56px;

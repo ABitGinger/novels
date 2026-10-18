@@ -210,24 +210,25 @@
   function buildFooter() {
     var main = document.querySelector(".content main");
     if (!main) return;
-    // 章节页（阅读中）只留一个「回书房」的出口，版权 / AI 声明不往正文尾巴上压；
-    // 扉页是书的门面，那里才放声明。
+    // 读到最后不该再被任何东西拦住：章节页底部只有翻页（mdBook 自带），不注入页脚。
+    // 版权与 AI 声明只放在扉页——那是书的门面，不是阅读过程。
     var isFront = /\/$|\/index\.html$/.test(location.pathname);
+    if (!isFront) return;
+
     var foot = document.createElement("footer");
-    foot.className = "wzz-foot" + (isFront ? " wzz-foot-front" : " wzz-foot-mini");
+    foot.className = "wzz-foot wzz-foot-front";
 
     var html =
       '<a class="wzz-foot-back" href="' + esc(shelfUrl()) + '" data-wzz-instant>' +
       '<span class="wzz-foot-arrow">←</span>' +
       '<span class="wzz-foot-t">返回书房</span></a>';
 
-    if (isFront) {
-      // 正文里已写过声明（扉页「创作方式」）就不再在页脚重复
-      var ai = main.querySelector(".ai-note") ? "" : meta("wzz:ai");
-      var cr = meta("wzz:copyright");
-      if (ai) html += '<p class="wzz-foot-ai">' + esc(ai) + "</p>";
-      if (cr) html += '<p class="wzz-foot-cr">' + esc(cr) + "</p>";
-    }
+    // 正文里已写过声明（扉页「创作方式」）就不再在页脚重复
+    var ai = main.querySelector(".ai-note") ? "" : meta("wzz:ai");
+    var cr = meta("wzz:copyright");
+    if (ai) html += '<p class="wzz-foot-ai">' + esc(ai) + "</p>";
+    if (cr) html += '<p class="wzz-foot-cr">' + esc(cr) + "</p>";
+
     foot.innerHTML = html;
     main.appendChild(foot);
   }

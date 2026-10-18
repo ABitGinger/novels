@@ -47,6 +47,26 @@ curl -X POST https://api.github.com/repos/<owner>/<repo>/pages \
 - [mdBook](https://github.com/rust-lang/mdBook)（MPL-2.0）——纯静态输出、自带目录/搜索/键盘翻页，无后端、无 npm 依赖。
 - 自定义主题 `books/*/theme/book.css`：纸感配色、宋体正文、档案体文献排版、阅读进度条、记住上次读到哪儿。
 
+## 分享卡片（微信 / QQ）
+
+每页都带 `<title>`、`<meta name="description">` 与 `og:*`，分享出去显示的是标题 + 简介 + 方图封面，而不是浏览器图标：
+
+| 分享对象 | 封面 | 注入位置 |
+|---|---|---|
+| 书架页 `/novels/` | `site/assets/og-shelf.png` | `site/index.html` 头部 |
+| 书 / 任意章节 | `site/assets/og-book.png` | `books/wuzhizhe/theme/head.hbs`（mdBook 会把它插进每页 `<head>`） |
+
+- 封面 1200×1200，文案集中在中央安全带内，裁成 1.91:1 或 1:1 都不切字。
+- 源文件是 `tools/og/{shelf,book}.html`，改完文案用无头浏览器重截即可：
+
+```bash
+msedge --headless=new --hide-scrollbars --window-size=1200,1200 \
+  --screenshot=site/assets/og-shelf.png tools/og/shelf.html
+```
+
+- 站内图标也已替换 mdBook 默认图标：`theme/favicon.{svg,png}`、`site/assets/favicon.{svg,png}`。
+- 微信对同一链接会缓存旧预览；改完想立刻验证，加个 `?v=2` 之类的参数再分享。
+
 ## 加一本书
 
 1. `books/<slug>/` 放 `book.toml`、`src/`、`theme/`（可从 `books/wuzhizhe` 复制后改）；

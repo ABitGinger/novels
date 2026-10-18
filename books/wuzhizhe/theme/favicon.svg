@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect x="40" y="40" width="432" height="432" rx="34" fill="#9e3b2c"/>
+  <rect x="72" y="72" width="368" height="368" rx="18" fill="none" stroke="#f7f3ec" stroke-opacity="0.55" stroke-width="6"/>
+  <text x="256" y="256" text-anchor="middle" dominant-baseline="central"
+        font-family="'Noto Serif SC','Source Han Serif SC','SimSun',serif"
+        font-size="300" font-weight="600" fill="#f7f3ec">无</text>
+</svg>

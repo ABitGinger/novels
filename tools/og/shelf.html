@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1200px; height: 1200px; overflow: hidden; }
+  body {
+    background: #f7f3ec;
+    background-image:
+      radial-gradient(110% 80% at 50% 20%, rgba(255,255,255,.9), rgba(247,243,236,0) 60%),
+      radial-gradient(85% 60% at 50% 105%, rgba(140,90,43,.11), rgba(140,90,43,0) 70%);
+    font-family: "Noto Serif SC", "NotoSerifSC", "Source Han Serif SC", "SimSun", serif;
+    color: #1d1a16;
+    position: relative;
+  }
+  /* 正文全部落在 y≈300–900 的中央安全带内：方图完整显示，宽屏裁切也不切字 */
+  .inner {
+    position: absolute; left: 0; right: 0; top: 300px; height: 600px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+  }
+  .kicker {
+    font-size: 17px; letter-spacing: .62em; text-indent: .62em;
+    color: #968c7b; margin-bottom: 44px;
+  }
+  h1 {
+    font-size: 190px; font-weight: 600; line-height: 1.02;
+    letter-spacing: .24em; text-indent: .24em;
+  }
+  .rule { width: 110px; height: 1px; background: rgba(29,26,22,.3); margin: 46px 0 30px; }
+  .sub { font-size: 27px; letter-spacing: .14em; text-indent: .14em; color: #4a4438; }
+  .foot {
+    margin-top: 66px;
+    font-size: 18px; letter-spacing: .34em; text-indent: .34em; color: #a1968a;
+  }
+  .seal {
+    position: absolute; right: 126px; top: 336px;
+    width: 82px; height: 82px; border-radius: 4px;
+    background: #9e3b2c; color: #f7f3ec;
+    font-size: 46px; line-height: 82px; text-align: center;
+    box-shadow: 0 0 0 3px rgba(158,59,44,.16);
+  }
+</style>
+</head>
+<body>
+  <div class="seal">记</div>
+  <div class="inner">
+    <div class="kicker">原创长篇 · 在线阅读</div>
+    <h1>书房</h1>
+    <div class="rule"></div>
+    <div class="sub">《无职者》全本 · 三卷三十四章 · 约二十二万字</div>
+    <div class="foot">abitginger.top</div>
+  </div>
+</body>
+</html>

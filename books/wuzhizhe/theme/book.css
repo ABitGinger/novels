@@ -709,51 +709,43 @@ mark {
 }
 
 /* 打印 */
-/* ── 顶栏：书房入口 ──────────────────────────────────────────────────── */
-.wzz-shelf {
-  display: inline-flex;
+/* ── 侧栏：返回书房 ──────────────────────────────────────────────────── */
+.wzz-side-shelf {
+  display: flex;
   align-items: center;
-  gap: 3px;
-  height: 32px;
-  padding: 0 10px;
-  margin-inline-end: 3px;
+  gap: 6px;
+  margin: 2px 0 10px;
+  padding: 8px 10px 9px 18px;
   font-family: var(--sans);
   font-size: 13px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   color: var(--ink-2) !important;
   text-decoration: none;
-  border: 1px solid var(--line);
-  border-radius: 2px;
-  background: transparent;
-  transition: color 0.16s, border-color 0.16s, background 0.16s;
+  border-bottom: 1px solid var(--line);
+  transition: color 0.16s, background 0.16s;
 }
 
-.wzz-shelf:hover {
+.wzz-side-shelf:hover {
   color: var(--accent) !important;
-  border-color: var(--accent-dim);
-  background: color-mix(in srgb, var(--paper-2) 70%, transparent);
+  background: color-mix(in srgb, var(--paper-2) 65%, transparent);
   text-decoration: none;
 }
 
-.wzz-shelf-arrow {
-  font-size: 15px;
+.wzz-side-arrow {
+  font-size: 14px;
   line-height: 1;
   color: var(--accent);
-  opacity: 0.95;
   transform: translateY(-0.5px);
-}
-
-.wzz-shelf-short {
-  display: none;
 }
 
 /* ── 顶栏：Aa 设置面板 ──────────────────────────────────────────────── */
 .wzz-btn {
-  width: 32px;
-  height: 32px;
+  height: 100%;
+  width: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  align-self: stretch;
 }
 
 .wzz-aa {
@@ -918,27 +910,71 @@ a.wzz-nav {
 
 /* ── 页脚 ────────────────────────────────────────────────────────────── */
 .wzz-foot {
-  margin: 78px 0 4px;
-  padding-top: 26px;
-  border-top: 1px solid var(--line);
   font-family: var(--sans);
-  font-size: 12px;
-  letter-spacing: 0.05em;
-  line-height: 1.95;
   color: var(--muted);
 }
 
-.wzz-foot a.wzz-foot-back {
-  display: inline-block;
-  margin-bottom: 12px;
-  color: var(--ink-3);
-  border: 0;
-  font-size: 12px;
-  letter-spacing: 0.12em;
+/* 章节页（阅读中）：只留一个出口，轻到不打断正文 */
+.wzz-foot-mini {
+  margin: 62px 0 0;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+  text-align: center;
 }
 
-.wzz-foot a.wzz-foot-back:hover {
+/* 扉页（书的门面）：这里才放版权与 AI 声明 */
+.wzz-foot-front {
+  margin: 84px 0 4px;
+  padding-top: 26px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  line-height: 1.95;
+}
+
+.wzz-foot-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 19px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 12.5px;
+  letter-spacing: 0.13em;
+  color: var(--ink-2) !important;
+  background: transparent;
+  text-decoration: none;
+  transition: color 0.16s, border-color 0.16s, background 0.16s, transform 0.09s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wzz-foot-back:hover {
+  color: var(--accent) !important;
+  border-color: var(--accent-dim);
+  background: color-mix(in srgb, var(--paper-2) 70%, transparent);
+  text-decoration: none;
+}
+
+.wzz-foot-back:active {
+  transform: translateY(1px) scale(0.985);
+}
+
+.wzz-foot-back.wzz-pending {
+  color: var(--accent) !important;
+  border-color: var(--accent-dim);
+  opacity: 0.75;
+  cursor: progress;
+}
+
+.wzz-foot-arrow {
+  font-size: 14px;
+  line-height: 1;
   color: var(--accent);
+}
+
+.wzz-foot-front .wzz-foot-back {
+  margin-bottom: 14px;
 }
 
 .wzz-foot p {
@@ -968,19 +1004,9 @@ a.wzz-nav {
 }
 
 @media (max-width: 720px) {
-  .wzz-shelf {
-    padding: 0 8px;
-    font-size: 12px;
-    letter-spacing: 0.04em;
-  }
-  .wzz-shelf-long {
-    display: none;
-  }
-  .wzz-shelf-short {
-    display: inline;
-  }
-  .wzz-shelf-arrow {
+  .wzz-side-shelf {
     font-size: 13px;
+    padding: 9px 10px 10px 18px;
   }
   #wzz-panel {
     min-width: 0;
@@ -996,8 +1022,11 @@ a.wzz-nav {
     padding: 7px 13px 7px 11px;
     font-size: 12px;
   }
-  .wzz-foot {
-    margin-top: 52px;
+  .wzz-foot-mini {
+    margin-top: 46px;
+  }
+  .wzz-foot-front {
+    margin-top: 56px;
     font-size: 11.5px;
   }
 }

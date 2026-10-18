@@ -99,23 +99,21 @@
     return SIZES.indexOf(v) >= 0 ? v : "1";
   }
 
-  /* ── 顶栏：书房入口 + 设置面板 ────────────────────────────────────── */
+  /* ── 侧栏：目录顶部的「返回书房」──────────────────────────────────── */
+  function buildShelfEntry() {
+    var box = document.querySelector("#sidebar .sidebar-scrollbox");
+    if (!box) return;
+    var a = document.createElement("a");
+    a.className = "wzz-side-shelf";
+    a.href = shelfUrl();
+    a.innerHTML = '<span class="wzz-side-arrow">←</span>返回书房';
+    box.insertBefore(a, box.firstChild);
+  }
+
+  /* ── 顶栏：Aa 设置面板 ────────────────────────────────────────────── */
   function buildUI() {
     var host = document.querySelector("#menu-bar .left-buttons");
     if (!host) return;
-
-    var shelf = document.createElement("a");
-    shelf.className = "wzz-shelf";
-    shelf.href = shelfUrl();
-    shelf.title = "返回书房";
-    shelf.setAttribute("aria-label", "返回书房");
-    shelf.innerHTML =
-      '<span class="wzz-shelf-arrow">←</span>' +
-      '<span class="wzz-shelf-long">返回书房</span>' +
-      '<span class="wzz-shelf-short">书房</span>';
-    var toggle = host.querySelector("#sidebar-toggle");
-    if (toggle && toggle.nextSibling) host.insertBefore(shelf, toggle.nextSibling);
-    else host.appendChild(shelf);
 
     var btn = document.createElement("button");
     btn.id = "wzz-btn";
@@ -212,15 +210,25 @@
   function buildFooter() {
     var main = document.querySelector(".content main");
     if (!main) return;
-    // 正文里已写过声明（如扉页「创作方式」）就不再在页脚重复
-    var ai = main.querySelector(".ai-note") ? "" : meta("wzz:ai");
-    var cr = meta("wzz:copyright");
+    // 章节页（阅读中）只留一个「回书房」的出口，版权 / AI 声明不往正文尾巴上压；
+    // 扉页是书的门面，那里才放声明。
+    var isFront = /\/$|\/index\.html$/.test(location.pathname);
     var foot = document.createElement("footer");
-    foot.className = "wzz-foot";
-    foot.innerHTML =
-      '<a class="wzz-foot-back" href="' + esc(shelfUrl()) + '">← 返回书房</a>' +
-      (ai ? '<p class="wzz-foot-ai">' + esc(ai) + "</p>" : "") +
-      (cr ? '<p class="wzz-foot-cr">' + esc(cr) + "</p>" : "");
+    foot.className = "wzz-foot" + (isFront ? " wzz-foot-front" : " wzz-foot-mini");
+
+    var html =
+      '<a class="wzz-foot-back" href="' + esc(shelfUrl()) + '" data-wzz-instant>' +
+      '<span class="wzz-foot-arrow">←</span>' +
+      '<span class="wzz-foot-t">返回书房</span></a>';
+
+    if (isFront) {
+      // 正文里已写过声明（扉页「创作方式」）就不再在页脚重复
+      var ai = main.querySelector(".ai-note") ? "" : meta("wzz:ai");
+      var cr = meta("wzz:copyright");
+      if (ai) html += '<p class="wzz-foot-ai">' + esc(ai) + "</p>";
+      if (cr) html += '<p class="wzz-foot-cr">' + esc(cr) + "</p>";
+    }
+    foot.innerHTML = html;
     main.appendChild(foot);
   }
 
@@ -321,11 +329,29 @@
         if (!href || href.charAt(0) === "#" || href.indexOf("javascript:") === 0) return;
         if (a.target && a.target !== "_self") return;
         if (a.host !== location.host) return;
+        if (a.href === location.href) return;
+        // 页脚那个出口离顶栏很远，顶部闪一下反而像是“点空了、没反应”。
+        // 这里在点到的位置上就地反馈，不抢顶栏。
+        if (a.hasAttribute("data-wzz-instant")) {
+          if (a.classList.contains("wzz-pending")) return;
+          a.classList.add("wzz-pending");
+          var t = a.querySelector(".wzz-foot-t");
+          if (t) t.textContent = "正在返回书房…";
+          return;
+        }
         start(a);
       },
       true
     );
     window.addEventListener("pageshow", stop);
+    // 浏览器「后退」回到本页时，就地反馈要复原，否则会停在「正在返回书房…」
+    window.addEventListener("pageshow", function () {
+      var p = document.querySelector(".wzz-foot-back.wzz-pending");
+      if (!p) return;
+      p.classList.remove("wzz-pending");
+      var t = p.querySelector(".wzz-foot-t");
+      if (t) t.textContent = "返回书房";
+    });
     window.addEventListener("beforeunload", function () {
       /* 交给下一页自然接管，避免闪一下 */
       if (on) bar.style.width = "92%";
@@ -430,6 +456,7 @@
     applyTheme(themePref(), false);
 
     buildUI();
+    buildShelfEntry();
     buildFooter();
     navFeedback();
     prefetch();

@@ -38,6 +38,18 @@ jobs:
       - name: Assemble shelf
         run: cp -r site/. _site/
 
+      # GitHub Pages 给 .js/.css 的缓存是 max-age=14400（4 小时），HTML 只有 600 秒。
+      # 于是改完前端逻辑，读者拿到的仍是旧 JS ——「回书架 / 载入提示」看着像没上线。
+      # 这里把静态资源地址统一加上提交指纹，HTML 一变 URL 就变，缓存自然失效。
+      - name: Bust asset cache
+        run: |
+          set -e
+          V=$(git rev-parse --short=8 HEAD)
+          echo "asset version: $V"
+          find _site -name '*.html' -print0 | xargs -0 sed -i -E \
+            "s#(theme/[A-Za-z0-9._-]+\.(css|js))\"#\1?v=$V\"#g"
+          grep -ro "theme/[A-Za-z0-9._-]*\.\(css\|js\)?v=$V" _site --include='*.html' | head -3
+
       # Pages 站点需存在（Source = GitHub Actions）。工作流的临时令牌无权创建站点，
       # 所以这里不加 enablement，Site 未开时会直接报出可读的提示。
       - uses: actions/configure-pages@v5

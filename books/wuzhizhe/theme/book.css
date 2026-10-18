@@ -713,23 +713,24 @@ mark {
 .wzz-shelf {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   height: 32px;
-  padding: 0 11px;
-  margin-inline-end: 2px;
+  padding: 0 10px;
+  margin-inline-end: 3px;
   font-family: var(--sans);
-  font-size: 12.5px;
-  letter-spacing: 0.1em;
-  color: var(--ink-3) !important;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--ink-2) !important;
   text-decoration: none;
-  border: 1px solid transparent;
+  border: 1px solid var(--line);
   border-radius: 2px;
+  background: transparent;
   transition: color 0.16s, border-color 0.16s, background 0.16s;
 }
 
 .wzz-shelf:hover {
   color: var(--accent) !important;
-  border-color: var(--line);
+  border-color: var(--accent-dim);
   background: color-mix(in srgb, var(--paper-2) 70%, transparent);
   text-decoration: none;
 }
@@ -737,8 +738,13 @@ mark {
 .wzz-shelf-arrow {
   font-size: 15px;
   line-height: 1;
-  opacity: 0.7;
+  color: var(--accent);
+  opacity: 0.95;
   transform: translateY(-0.5px);
+}
+
+.wzz-shelf-short {
+  display: none;
 }
 
 /* ── 顶栏：Aa 设置面板 ──────────────────────────────────────────────── */
@@ -963,9 +969,15 @@ a.wzz-nav {
 
 @media (max-width: 720px) {
   .wzz-shelf {
-    padding: 0 7px;
+    padding: 0 8px;
     font-size: 12px;
     letter-spacing: 0.04em;
+  }
+  .wzz-shelf-long {
+    display: none;
+  }
+  .wzz-shelf-short {
+    display: inline;
   }
   .wzz-shelf-arrow {
     font-size: 13px;

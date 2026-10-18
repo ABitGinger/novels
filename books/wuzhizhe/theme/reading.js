@@ -109,7 +109,10 @@
     shelf.href = shelfUrl();
     shelf.title = "返回书房";
     shelf.setAttribute("aria-label", "返回书房");
-    shelf.innerHTML = '<span class="wzz-shelf-arrow">←</span>书房';
+    shelf.innerHTML =
+      '<span class="wzz-shelf-arrow">←</span>' +
+      '<span class="wzz-shelf-long">返回书房</span>' +
+      '<span class="wzz-shelf-short">书房</span>';
     var toggle = host.querySelector("#sidebar-toggle");
     if (toggle && toggle.nextSibling) host.insertBefore(shelf, toggle.nextSibling);
     else host.appendChild(shelf);

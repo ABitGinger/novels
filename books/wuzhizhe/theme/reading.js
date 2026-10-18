@@ -1,10 +1,32 @@
-/* 《无职者》阅读增强：进度条 · 分隔符 · 记住读到哪儿 */
+/* 《无职者》阅读增强
+   · 主题 / 字号（可跟随系统）
+   · 返回书房
+   · 章节跳转的载入反馈与预取
+   · 阅读进度条、分隔符、记住读到哪儿
+   注：主题的"防闪"引导脚本在 theme/head.hbs 里，先于本文件执行。
+*/
 (function () {
   "use strict";
 
-  var KEY_LAST = "wzz:last";
-  var KEY_RESUME = "wzz:resume";
+  var LS_THEME = "wzz:theme"; // auto | light | dark
+  var LS_SIZE = "wzz:size"; // "0.92" | "1" | "1.14" | "1.3"
+  var LS_THEME_MD = "mdbook-theme";
+  var LS_LAST = "wzz:last";
+  var LS_RESUME = "wzz:resume";
+  var SIZES = ["0.92", "1", "1.14", "1.3"];
 
+  function get(k) {
+    try {
+      return localStorage.getItem(k);
+    } catch (e) {
+      return null;
+    }
+  }
+  function set(k, v) {
+    try {
+      localStorage.setItem(k, v);
+    } catch (e) {}
+  }
   function store(key, val) {
     try {
       localStorage.setItem(key, JSON.stringify(val));
@@ -17,6 +39,186 @@
     } catch (e) {
       return null;
     }
+  }
+  function meta(name) {
+    var el = document.querySelector('meta[name="' + name + '"]');
+    return el ? el.getAttribute("content") || "" : "";
+  }
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function closestLink(node) {
+    while (node && node !== document) {
+      if (node.tagName === "A") return node;
+      node = node.parentNode;
+    }
+    return null;
+  }
+
+  /* ── 书房首页地址：从路径里切掉 "/<slug>/" 之后的部分 ─────────────── */
+  function shelfUrl() {
+    var slug = meta("wzz:slug");
+    var p = location.pathname;
+    if (slug) {
+      var i = p.indexOf("/" + slug + "/");
+      if (i >= 0) return p.slice(0, i + 1);
+    }
+    return "../";
+  }
+
+  /* ── 主题 ─────────────────────────────────────────────────────────── */
+  var mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+
+  function themePref() {
+    var v = get(LS_THEME);
+    return v === "light" || v === "dark" ? v : "auto";
+  }
+
+  function applyTheme(pref, remember) {
+    var dark =
+      pref === "dark" || (pref === "auto" && mq && mq.matches);
+    document.documentElement.className = dark ? "coal" : "light";
+    set(LS_THEME_MD, document.documentElement.className);
+    if (remember !== false) set(LS_THEME, pref);
+    syncUI();
+  }
+
+  function onSystemThemeChange() {
+    if (themePref() === "auto") applyTheme("auto", false);
+  }
+
+  /* ── 字号 ─────────────────────────────────────────────────────────── */
+  function applySize(v) {
+    document.documentElement.style.setProperty("--reading-scale", v);
+    set(LS_SIZE, v);
+    syncUI();
+  }
+
+  function currentSize() {
+    var v = get(LS_SIZE);
+    return SIZES.indexOf(v) >= 0 ? v : "1";
+  }
+
+  /* ── 顶栏：书房入口 + 设置面板 ────────────────────────────────────── */
+  function buildUI() {
+    var host = document.querySelector("#menu-bar .left-buttons");
+    if (!host) return;
+
+    var shelf = document.createElement("a");
+    shelf.className = "wzz-shelf";
+    shelf.href = shelfUrl();
+    shelf.title = "返回书房";
+    shelf.setAttribute("aria-label", "返回书房");
+    shelf.innerHTML = '<span class="wzz-shelf-arrow">←</span>书房';
+    var toggle = host.querySelector("#sidebar-toggle");
+    if (toggle && toggle.nextSibling) host.insertBefore(shelf, toggle.nextSibling);
+    else host.appendChild(shelf);
+
+    var btn = document.createElement("button");
+    btn.id = "wzz-btn";
+    btn.type = "button";
+    btn.className = "icon-button wzz-btn";
+    btn.title = "主题与字号";
+    btn.setAttribute("aria-label", "主题与字号");
+    btn.setAttribute("aria-expanded", "false");
+    btn.innerHTML = '<span class="wzz-aa">Aa</span>';
+    var search = host.querySelector("#search-toggle");
+    if (search) host.insertBefore(btn, search);
+    else host.appendChild(btn);
+
+    var panel = document.createElement("div");
+    panel.id = "wzz-panel";
+    panel.setAttribute("role", "dialog");
+    panel.setAttribute("aria-label", "主题与字号");
+    panel.innerHTML =
+      '<div class="wzz-row"><span class="wzz-lab">主题</span>' +
+      '<div class="wzz-seg" data-group="theme">' +
+      '<button type="button" data-val="auto">跟随系统</button>' +
+      '<button type="button" data-val="light">浅色</button>' +
+      '<button type="button" data-val="dark">深色</button>' +
+      "</div></div>" +
+      '<div class="wzz-row"><span class="wzz-lab">字号</span>' +
+      '<div class="wzz-seg" data-group="size">' +
+      '<button type="button" data-val="0.92">小</button>' +
+      '<button type="button" data-val="1">标准</button>' +
+      '<button type="button" data-val="1.14">大</button>' +
+      '<button type="button" data-val="1.3">特大</button>' +
+      "</div></div>";
+    document.body.appendChild(panel);
+
+    function open() {
+      panel.classList.add("on");
+      var pw = panel.offsetWidth || 280;
+      var r = btn.getBoundingClientRect();
+      var left = Math.min(Math.max(8, r.left), Math.max(8, window.innerWidth - pw - 8));
+      panel.style.left = Math.round(left) + "px";
+      panel.style.top = Math.round(r.bottom + 8) + "px";
+      btn.setAttribute("aria-expanded", "true");
+      syncUI();
+    }
+    function close() {
+      panel.classList.remove("on");
+      btn.setAttribute("aria-expanded", "false");
+    }
+
+    btn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (panel.classList.contains("on")) close();
+      else open();
+    });
+
+    panel.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var t = e.target;
+      if (t.tagName !== "BUTTON") return;
+      var group = t.parentNode.getAttribute("data-group");
+      var val = t.getAttribute("data-val");
+      if (group === "theme") applyTheme(val);
+      else applySize(val);
+    });
+
+    document.addEventListener("click", close);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") close();
+    });
+    window.addEventListener("resize", function () {
+      if (panel.classList.contains("on")) close();
+    });
+  }
+
+  function syncUI() {
+    var panel = document.getElementById("wzz-panel");
+    if (!panel) return;
+    var pref = themePref();
+    var size = currentSize();
+    var groups = panel.querySelectorAll(".wzz-seg");
+    for (var i = 0; i < groups.length; i++) {
+      var g = groups[i];
+      var isTheme = g.getAttribute("data-group") === "theme";
+      var btns = g.querySelectorAll("button");
+      for (var j = 0; j < btns.length; j++) {
+        var v = btns[j].getAttribute("data-val");
+        var on = isTheme ? v === pref : v === size;
+        btns[j].className = on ? "on" : "";
+        btns[j].setAttribute("aria-pressed", on ? "true" : "false");
+      }
+    }
+  }
+
+  /* ── 页脚 ─────────────────────────────────────────────────────────── */
+  function buildFooter() {
+    var main = document.querySelector(".content main");
+    if (!main) return;
+    // 正文里已写过声明（如扉页「创作方式」）就不再在页脚重复
+    var ai = main.querySelector(".ai-note") ? "" : meta("wzz:ai");
+    var cr = meta("wzz:copyright");
+    var foot = document.createElement("footer");
+    foot.className = "wzz-foot";
+    foot.innerHTML =
+      '<a class="wzz-foot-back" href="' + esc(shelfUrl()) + '">← 返回书房</a>' +
+      (ai ? '<p class="wzz-foot-ai">' + esc(ai) + "</p>" : "") +
+      (cr ? '<p class="wzz-foot-cr">' + esc(cr) + "</p>" : "");
+    main.appendChild(foot);
   }
 
   /* ── 正文装饰 ─────────────────────────────────────────────────────── */
@@ -34,7 +236,7 @@
     }
   }
 
-  /* ── 进度条 ───────────────────────────────────────────────────────── */
+  /* ── 阅读进度条 ───────────────────────────────────────────────────── */
   function progress() {
     var bar = document.createElement("div");
     bar.id = "read-progress";
@@ -60,6 +262,106 @@
     update();
   }
 
+  /* ── 跳转反馈：进度条 + 载入提示 + 慢网提示 ───────────────────────── */
+  function navFeedback() {
+    var bar = document.createElement("div");
+    bar.id = "loadbar";
+    var pill = document.createElement("div");
+    pill.id = "loadpill";
+    pill.innerHTML = '<i class="wzz-spin"></i><span class="wzz-pill-t">载入中…</span>';
+    document.body.appendChild(bar);
+    document.body.appendChild(pill);
+
+    var on = false;
+    var slowTimer = null;
+    var stepTimer = null;
+
+    function start(a) {
+      if (on) return;
+      on = true;
+      bar.classList.add("on");
+      pill.classList.add("on");
+      document.documentElement.classList.add("wzz-busy");
+      bar.style.width = "10%";
+      stepTimer = setTimeout(function () {
+        if (on) bar.style.width = "62%";
+      }, 240);
+      slowTimer = setTimeout(function () {
+        if (!on) return;
+        bar.style.width = "86%";
+        pill.querySelector(".wzz-pill-t").textContent = "网络较慢，仍在载入…";
+      }, 2800);
+      if (a) a.classList.add("wzz-nav");
+    }
+
+    function stop() {
+      if (!on) return;
+      on = false;
+      clearTimeout(slowTimer);
+      clearTimeout(stepTimer);
+      bar.style.width = "100%";
+      bar.classList.remove("on");
+      pill.classList.remove("on");
+      document.documentElement.classList.remove("wzz-busy");
+      setTimeout(function () {
+        if (!on) bar.style.width = "0";
+      }, 340);
+    }
+
+    document.addEventListener(
+      "click",
+      function (e) {
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        var a = closestLink(e.target);
+        if (!a) return;
+        var href = a.getAttribute("href");
+        if (!href || href.charAt(0) === "#" || href.indexOf("javascript:") === 0) return;
+        if (a.target && a.target !== "_self") return;
+        if (a.host !== location.host) return;
+        start(a);
+      },
+      true
+    );
+    window.addEventListener("pageshow", stop);
+    window.addEventListener("beforeunload", function () {
+      /* 交给下一页自然接管，避免闪一下 */
+      if (on) bar.style.width = "92%";
+    });
+  }
+
+  /* ── 预取：悬停预热 + 空闲预取下一章 ─────────────────────────────── */
+  function prefetch() {
+    var conn = navigator.connection || {};
+    if (conn.saveData) return;
+    if (/^(slow-2g|2g)$/.test(conn.effectiveType || "")) return;
+
+    var seen = {};
+    function pf(url) {
+      if (!url || seen[url]) return;
+      seen[url] = 1;
+      var l = document.createElement("link");
+      l.rel = "prefetch";
+      l.href = url;
+      document.head.appendChild(l);
+    }
+    function onHover(e) {
+      var a = closestLink(e.target);
+      if (!a || a.host !== location.host) return;
+      var href = a.getAttribute("href");
+      if (!href || href.charAt(0) === "#") return;
+      pf(a.href);
+    }
+    document.addEventListener("mouseover", onHover, { passive: true });
+    document.addEventListener("touchstart", onHover, { passive: true });
+
+    var next = document.querySelector(".nav-chapters.next, .mobile-nav-chapters.next");
+    if (next && next.href) {
+      setTimeout(function () {
+        pf(next.href);
+      }, 1500);
+    }
+  }
+
   /* ── 记住读到哪儿 ─────────────────────────────────────────────────── */
   function remember() {
     var path = location.pathname;
@@ -71,7 +373,7 @@
     function save() {
       var hh = document.documentElement.scrollHeight - window.innerHeight;
       var ratio = hh > 0 ? Math.min(1, Math.max(0, window.scrollY / hh)) : 0;
-      store(KEY_LAST, {
+      store(LS_LAST, {
         path: path,
         title: document.title.replace(/\s*-\s*无职者\s*$/, ""),
         ratio: ratio,
@@ -88,11 +390,10 @@
     );
     window.addEventListener("pagehide", save);
 
-    // 由首页「继续阅读」跳转而来时，恢复滚动位置
-    var want = sessionStorage.getItem(KEY_RESUME);
+    var want = sessionStorage.getItem(LS_RESUME);
     if (want && want === path) {
-      sessionStorage.removeItem(KEY_RESUME);
-      var last = load(KEY_LAST);
+      sessionStorage.removeItem(LS_RESUME);
+      var last = load(LS_LAST);
       if (last && last.path === path && last.ratio > 0) {
         var target = last.ratio * h;
         setTimeout(function () {
@@ -102,22 +403,34 @@
     }
   }
 
-  /* ── 首页「继续阅读」──────────────────────────────────────────────── */
+  /* ── 扉页「继续阅读」──────────────────────────────────────────────── */
   function homeResume() {
     var btn = document.getElementById("read-btn");
     if (!btn) return;
-    var last = load(KEY_LAST);
+    var last = load(LS_LAST);
     if (!last || !last.path || !last.title) return;
     btn.textContent = "继续阅读 · " + last.title;
     btn.setAttribute("href", last.path);
     btn.addEventListener("click", function () {
       try {
-        sessionStorage.setItem(KEY_RESUME, last.path);
+        sessionStorage.setItem(LS_RESUME, last.path);
       } catch (e) {}
     });
   }
 
   function boot() {
+    // 主题：跟随系统时，系统切换要即时生效
+    if (mq) {
+      if (mq.addEventListener) mq.addEventListener("change", onSystemThemeChange);
+      else if (mq.addListener) mq.addListener(onSystemThemeChange);
+    }
+    applyTheme(themePref(), false);
+
+    buildUI();
+    buildFooter();
+    navFeedback();
+    prefetch();
+
     var content = document.querySelector(".content main");
     if (content) {
       decorate(content);

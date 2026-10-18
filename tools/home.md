@@ -55,3 +55,7 @@
 <h2 class="sec">关于</h2>
 
 <p class="note">本书为原创长篇，共 35 个文件（楔子 + 三卷 34 章），约 22.2 万字。全站为静态页面，可用左侧目录翻阅，也可用键盘 <kbd>←</kbd> <kbd>→</kbd> 前后翻章。阅读位置会自动记在本机浏览器里。</p>
+
+<h2 class="sec">创作方式</h2>
+
+<p class="note ai-note">本书正文由 AI 模型 <strong>DeepSeek-V4-Flash-0731-W8A8</strong> 生成。人物、世界与情节均为虚构，如有雷同，纯属巧合。</p>

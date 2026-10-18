@@ -13,3 +13,24 @@
 <meta name="twitter:description" content="一个被培育出来、却没有被赋予任何用途的生物，在一座正在慢慢饿死的活体世界里，寻找「我是什么」。">
 <meta name="twitter:image" content="https://abitginger.top/novels/assets/og-wuzhizhe.png">
 <link rel="image_src" href="https://abitginger.top/novels/assets/og-wuzhizhe.png">
+<meta name="wzz:slug" content="wuzhizhe">
+<meta name="wzz:site" content="书房">
+<meta name="wzz:copyright" content="版权所有 © 壹位姜 2024–2026　·　未经许可，请勿转载或用于商业用途">
+<meta name="wzz:ai" content="本书正文由 AI 模型 DeepSeek-V4-Flash-0731-W8A8 生成，人物、世界与情节均为虚构。">
+<script>
+/* 主题与字号在首次绘制前落地，避免刷新时先闪一下浅色 */
+(function () {
+  try {
+    var root = document.documentElement;
+    var pref = localStorage.getItem("wzz:theme") || "auto";
+    var dark = pref === "dark" ||
+      (pref === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    root.className = dark ? "coal" : "light";
+    localStorage.setItem("mdbook-theme", root.className);
+    var scale = parseFloat(localStorage.getItem("wzz:size") || "1");
+    if (scale && scale !== 1) {
+      root.style.setProperty("--reading-scale", scale);
+    }
+  } catch (e) {}
+})();
+</script>

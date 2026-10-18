@@ -47,6 +47,24 @@ curl -X POST https://api.github.com/repos/<owner>/<repo>/pages \
 - [mdBook](https://github.com/rust-lang/mdBook)（MPL-2.0）——纯静态输出、自带目录/搜索/键盘翻页，无后端、无 npm 依赖。
 - 自定义主题 `books/*/theme/book.css`：纸感配色、宋体正文、档案体文献排版、阅读进度条、记住上次读到哪儿。
 
+## 阅读体验（`theme/reading.js`）
+
+mdBook 自带的五套英文主题（Light / Rust / Coal / Navy / Ayu）已全部停用，改为顶栏一个「Aa」面板，只有两项：
+
+| 项 | 取值 | 说明 |
+|---|---|---|
+| 主题 | 跟随系统 / 浅色 / 深色 | 默认「跟随系统」，系统换深浅色即时跟随；手动选择后记住，可随时切回自动 |
+| 字号 | 小 / 标准 / 大 / 特大 | 0.92 / 1 / 1.14 / 1.3 倍，写入 `--reading-scale`，正文、铭牌、档案体一起缩放 |
+
+- 主题在 `theme/head.hbs` 的引导脚本里**于首次绘制前**落地（`html.className = light|coal`），刷新不会先闪一下浅色；
+  同时写回 mdBook 自己的 `mdbook-theme` 键，避免两套逻辑打架。
+- 顶栏左侧有「← 书房」入口，正文末尾还有「← 返回书房」，从任何一章都能一步回书架。
+  书架地址由 `<meta name="wzz:slug">` 反推（切掉路径里的 `/<slug>/`），仓库改名不用改代码。
+- **跳转反馈**：点击任意站内链接立刻出现顶部进度条 + 居中「载入中…」提示；超过 2.8 秒改口为「网络较慢，仍在载入…」。
+  GitHub Pages 在国内常有 1–3 秒延迟，没有反馈会让人以为按钮失效。
+- **预取**：鼠标悬停目录项即预取该章，空闲 1.5 秒后自动预取「下一章」；`saveData` 或 2G 网络下自动关闭。
+- 页脚由 `share.json` 的 `copyright` / `ai` 字段驱动，每页都显示；若正文里已有声明（扉页「创作方式」带 `.ai-note`），页脚不再重复。
+
 ## 分享卡片（微信 / QQ）
 
 每页都带 `<title>`、`<meta name="description">` 与 `og:*`，分享出去显示的是这一页**自己的**标题 + 简介 + 方图封面，而不是浏览器图标：
@@ -81,7 +99,7 @@ msedge --headless=new --hide-scrollbars --window-size=1200,1200 \
 
 1. `books/<slug>/` 放 `book.toml`、`src/`、`theme/`（可从 `books/wuzhizhe` 复制后改）；
 2. `book.toml` 里把 `site-url` 改为 `/novels/<slug>/`；
-3. 写一份 `books/<slug>/share.json`（书名、署名、题记、简介、卷章字数、印章字、封面文件名，封面叫 `og-<slug>.png`）；
+3. 写一份 `books/<slug>/share.json`（书名、署名、题记、简介、卷章字数、印章字、封面文件名、版权与 AI 声明，封面叫 `og-<slug>.png`）；
 4. `python tools/make_share.py <slug> --render`，生成该书的 `head.hbs` 与封面；
 5. `site/index.html` 里加一条 `<a class="book" href="./<slug>/">`；
 6. 推送 `main`，Actions 自动构建全部书并发布。
@@ -99,7 +117,9 @@ msedge --headless=new --hide-scrollbars --window-size=1200,1200 \
   "desc": "一个被培育出来、却没有被赋予任何用途的生物……",
   "meta": "三卷 · 三十四章 · 22.2 万字",
   "seal": "无",
-  "cover": "og-wuzhizhe.png"
+  "cover": "og-wuzhizhe.png",
+  "copyright": "版权所有 © 壹位姜 2024–2026　·　未经许可，请勿转载或用于商业用途",
+  "ai": "本书正文由 AI 模型 DeepSeek-V4-Flash-0731-W8A8 生成，人物、世界与情节均为虚构。"
 }
 ```
 
@@ -116,4 +136,6 @@ mdBook 把 `html` 字号设为 62.5%（1rem = 10px），主题 CSS 统一用 px 
 
 ## 版权
 
-正文为原创作品，全部权利归作者所有。
+版权所有 © 壹位姜 2024–2026。除另有说明外，未经许可请勿转载、摘编或用于商业用途。
+
+《无职者》正文由 AI 模型 DeepSeek-V4-Flash-0731-W8A8 生成，人物、世界与情节均为虚构。

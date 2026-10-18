@@ -63,7 +63,7 @@
     align-items: center;
     padding: 12vh 24px 8vh;
   }
-  main { width: 100%; max-width: 620px; }
+  main { width: 100%; max-width: 620px; flex: 1 0 auto; display: flex; flex-direction: column; }
 
   header { text-align: center; margin-bottom: 8vh; }
   .kicker {
@@ -113,8 +113,25 @@
     letter-spacing: .22em;
     color: var(--ink);
     margin: 0 0 8px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
   }
   .book:hover .book-title { color: var(--accent); }
+  .ai-badge {
+    font-family: var(--sans);
+    font-size: 9.5px;
+    letter-spacing: .18em;
+    text-indent: .18em;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 2px 6px 2px 7px;
+    line-height: 1.4;
+    font-weight: 400;
+    transform: translateY(-2px);
+  }
   .book-desc {
     font-size: 15px;
     color: var(--ink-3);
@@ -137,6 +154,15 @@
     letter-spacing: .16em;
     color: var(--muted);
     text-align: center;
+    line-height: 2;
+  }
+  footer .cr { margin: 0; }
+  footer .cr-note {
+    margin: 4px 0 0;
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    opacity: .75;
+    line-height: 1.9;
   }
 </style>
 </head>
@@ -151,12 +177,18 @@
   <p class="shelf-label">书架</p>
 
   <a class="book" href="./wuzhizhe/">
-    <p class="book-title">无职者</p>
+    <p class="book-title">无职者<span class="ai-badge" title="正文由 AI 模型 DeepSeek-V4-Flash-0731-W8A8 生成">AI 生成</span></p>
     <p class="book-desc">一个被培育出来、却没有被赋予任何用途的生物，在一座由功能生物构成、正在慢慢饿死的活体世界里，寻找「我是什么」。</p>
     <p class="book-meta">三卷 · 三十四章 + 楔子<span class="dot">/</span>约 22.2 万字<span class="dot">/</span>已完结</p>
   </a>
 
-  <footer>全部内容为原创作品，版权归作者所有。</footer>
+  <footer>
+    <p class="cr">版权所有 © 壹位姜 2024 – <span id="year">2026</span></p>
+    <p class="cr-note">本站作品正文由 AI 生成；除另有说明外，未经许可请勿转载或用于商业用途。</p>
+  </footer>
 </main>
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
 </body>
 </html>

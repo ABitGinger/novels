@@ -1,0 +1,36 @@
+[book]
+title = "无职者"
+authors = ["壹位姜"]
+language = "zh-CN"
+description = "一个被培育出来、却没有被赋予任何用途的生物，在一座由功能生物构成、正在慢慢饿死的活体世界里，寻找「我是什么」。"
+
+[build]
+build-dir = "book"
+create-missing = false
+
+[output.html]
+site-url = "/wuzhizhe/"
+default-theme = "light"
+preferred-dark-theme = "coal"
+no-section-label = true
+git-repository-url = "https://github.com/ABitGinger/wuzhizhe"
+additional-css = ["theme/book.css"]
+additional-js = ["theme/reading.js"]
+
+[output.html.fold]
+enable = true
+level = 0
+
+[output.html.search]
+enable = true
+limit-results = 40
+teaser-word-count = 70
+use-boolean-and = false
+
+[output.html.print]
+enable = false
+
+[output.html.playground]
+editable = false
+copy-js = false
+line-numbers = false

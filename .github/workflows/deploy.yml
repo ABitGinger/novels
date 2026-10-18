@@ -38,9 +38,9 @@ jobs:
       - name: Assemble shelf
         run: cp -r site/. _site/
 
+      # Pages 站点需存在（Source = GitHub Actions）。工作流的临时令牌无权创建站点，
+      # 所以这里不加 enablement，Site 未开时会直接报出可读的提示。
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -2,13 +2,13 @@
 
 原创长篇小说在线阅读站，GitHub Pages 托管。
 
-**https://abitinger.github.io/novels/**
+**https://abitginger.top/novels/**（账号自定义域名；`github.io` 下的同路径不可用）
 
 ## 书架
 
 | 书 | 状态 | 篇幅 | 地址 |
 |---|---|---|---|
-| 《无职者》 | 完结 | 三卷 34 章 + 楔子，约 22.2 万字 | [/novels/wuzhizhe/](https://abitinger.github.io/novels/wuzhizhe/) |
+| 《无职者》 | 完结 | 三卷 34 章 + 楔子，约 22.2 万字 | [/novels/wuzhizhe/](https://abitginger.top/novels/wuzhizhe/) |
 
 ## 结构
 
@@ -27,6 +27,20 @@
 ```
 
 构建产物：`_site/<书名>/`，由 Actions 生成，不入库。
+
+## 部署前提
+
+本仓库的 Pages 已开通，`build_type` 为 `workflow`（Settings → Pages → Source：**GitHub Actions**）。
+
+复制到新仓库时要先手动开一次 Pages：工作流自带的临时令牌**无权创建** Pages 站点，未开通时构建会失败。可用有 `repo` 权限的令牌调一次：
+
+```bash
+curl -X POST https://api.github.com/repos/<owner>/<repo>/pages \
+  -H "Authorization: Bearer $TOKEN" -H "Accept: application/vnd.github+json" \
+  -d '{"build_type":"workflow"}'
+```
+
+开通后再推送或重跑工作流即可。
 
 ## 技术
 

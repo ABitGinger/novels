@@ -137,7 +137,7 @@ def main():
         shutil.rmtree(SRC)
     SRC.mkdir(parents=True, exist_ok=True)
 
-    summary = ["- [封面与简介](README.md)", "- [楔子 · 末问](00_楔子.md)", ""]
+    summary = ["- [扉页](README.md)", "- [楔子 · 末问](00_楔子.md)", ""]
     total_chars = 0
     stats = []
 

@@ -49,15 +49,25 @@ curl -X POST https://api.github.com/repos/<owner>/<repo>/pages \
 
 ## 分享卡片（微信 / QQ）
 
-每页都带 `<title>`、`<meta name="description">` 与 `og:*`，分享出去显示的是标题 + 简介 + 方图封面，而不是浏览器图标：
+每页都带 `<title>`、`<meta name="description">` 与 `og:*`，分享出去显示的是这一页**自己的**标题 + 简介 + 方图封面，而不是浏览器图标：
 
-| 分享对象 | 封面 | 注入位置 |
+| 分享对象 | og:title | 封面 |
 |---|---|---|
-| 书架页 `/novels/` | `site/assets/og-shelf.png` | `site/index.html` 头部 |
-| 书 / 任意章节 | `site/assets/og-book.png` | `books/wuzhizhe/theme/head.hbs`（mdBook 会把它插进每页 `<head>`） |
+| 书架页 `/novels/` | 书房 ·《无职者》全本在线阅读 | `site/assets/og-shelf.png` |
+| 书的扉页 `/wuzhizhe/` | 《无职者》· 看，也是一种使用。 | `site/assets/og-wuzhizhe.png` |
+| 楔子 / 任意章节 | 楔子 · 末问 - 无职者（mdBook 的 `{{ title }}`） | 同上 |
 
-- 封面 1200×1200，文案集中在中央安全带内，裁成 1.91:1 或 1:1 都不切字。
-- 源文件是 `tools/og/{shelf,book}.html`，改完文案用无头浏览器重截即可：
+**机制**：每本书一份 `books/<slug>/share.json`（书名、署名、题记、简介、卷章字数、印章字、封面文件名），一条命令据此生成两样东西：
+
+```bash
+python tools/make_share.py wuzhizhe --render   # 生成 head.hbs + 重渲封面 PNG
+python tools/make_share.py wuzhizhe            # 只改元信息，不动图片
+```
+
+- `theme/head.hbs`：mdBook 会自动把它注入每页 `<head>`。里面用 handlebars 判断 `path`——`index.md`（扉页）用书名与题记，其余页面用 `{{ title }}`（形如「第一章 · 育 - 无职者」），于是每章卡片自带章名和书名，不用逐章维护。
+- `site/assets/og-<slug>.png`：1200×1200，文案集中在中央安全带内，裁成 1.91:1 或 1:1 都不切字。
+
+书架页是手写的静态页，不走这套，改文案直接编辑 `site/index.html` 头部，再按下面这条重截封面：
 
 ```bash
 msedge --headless=new --hide-scrollbars --window-size=1200,1200 \
@@ -71,8 +81,27 @@ msedge --headless=new --hide-scrollbars --window-size=1200,1200 \
 
 1. `books/<slug>/` 放 `book.toml`、`src/`、`theme/`（可从 `books/wuzhizhe` 复制后改）；
 2. `book.toml` 里把 `site-url` 改为 `/novels/<slug>/`；
-3. `site/index.html` 里加一条 `<a class="book" href="./<slug>/">`；
-4. 推送 `main`，Actions 自动构建全部书并发布。
+3. 写一份 `books/<slug>/share.json`（书名、署名、题记、简介、卷章字数、印章字、封面文件名，封面叫 `og-<slug>.png`）；
+4. `python tools/make_share.py <slug> --render`，生成该书的 `head.hbs` 与封面；
+5. `site/index.html` 里加一条 `<a class="book" href="./<slug>/">`；
+6. 推送 `main`，Actions 自动构建全部书并发布。
+
+`share.json` 示例（字段名全小写，模板里写作 `__BOOK__` 这类大写占位符，由脚本替换）：
+
+```json
+{
+  "slug": "wuzhizhe",
+  "site": "书房",
+  "base_url": "https://abitginger.top/novels",
+  "book": "无职者",
+  "author": "壹 位 姜",
+  "quote": "看，也是一种使用。",
+  "desc": "一个被培育出来、却没有被赋予任何用途的生物……",
+  "meta": "三卷 · 三十四章 · 22.2 万字",
+  "seal": "无",
+  "cover": "og-wuzhizhe.png"
+}
+```
 
 ## 更新《无职者》正文
 

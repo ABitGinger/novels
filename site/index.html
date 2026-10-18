@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>书房</title>
+<meta name="description" content="原创长篇小说在线阅读。">
+<style>
+  :root {
+    --paper: #f7f3ec;
+    --paper-2: #efe8db;
+    --ink: #1d1a16;
+    --ink-2: #3d3830;
+    --ink-3: #6b6355;
+    --muted: #968c7b;
+    --line: #dcd2c0;
+    --accent: #8c5a2b;
+    --serif: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "STSong", "SimSun", "Georgia", serif;
+    --sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #15130f;
+      --paper-2: #1d1a15;
+      --ink: #e9e1d3;
+      --ink-2: #c9c0b0;
+      --ink-3: #9d9484;
+      --muted: #877e6f;
+      --line: #2f2a22;
+      --accent: #d19d66;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--paper);
+    background-image: radial-gradient(1200px 600px at 50% -200px, var(--paper-2), transparent 70%);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: var(--serif);
+    line-height: 1.9;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12vh 24px 8vh;
+  }
+  main { width: 100%; max-width: 620px; }
+
+  header { text-align: center; margin-bottom: 8vh; }
+  .kicker {
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: .42em;
+    text-indent: .42em;
+    color: var(--muted);
+    margin: 0 0 22px;
+  }
+  h1 {
+    font-size: 40px;
+    font-weight: 400;
+    letter-spacing: .34em;
+    text-indent: .34em;
+    margin: 0 0 18px;
+    line-height: 1.4;
+  }
+  .sub {
+    font-size: 14px;
+    letter-spacing: .1em;
+    color: var(--ink-3);
+    margin: 0;
+  }
+
+  .shelf-label {
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: .36em;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 10px;
+    margin: 0 0 4px;
+  }
+
+  .book {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    padding: 28px 4px;
+    border-bottom: 1px solid var(--line);
+    transition: padding-left .25s ease, border-color .25s ease;
+  }
+  .book:hover { padding-left: 14px; border-bottom-color: var(--accent); }
+  .book-title {
+    font-size: 26px;
+    letter-spacing: .22em;
+    color: var(--ink);
+    margin: 0 0 8px;
+  }
+  .book:hover .book-title { color: var(--accent); }
+  .book-desc {
+    font-size: 15px;
+    color: var(--ink-3);
+    margin: 0 0 12px;
+    text-align: justify;
+  }
+  .book-meta {
+    font-family: var(--sans);
+    font-size: 11.5px;
+    letter-spacing: .16em;
+    color: var(--muted);
+  }
+  .book-meta .dot { margin: 0 .5em; opacity: .5; }
+
+  footer {
+    margin-top: auto;
+    padding-top: 10vh;
+    font-family: var(--sans);
+    font-size: 11px;
+    letter-spacing: .16em;
+    color: var(--muted);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="kicker">原创长篇</p>
+    <h1>书房</h1>
+    <p class="sub">写了，就放在这里。</p>
+  </header>
+
+  <p class="shelf-label">书架</p>
+
+  <a class="book" href="./wuzhizhe/">
+    <p class="book-title">无职者</p>
+    <p class="book-desc">一个被培育出来、却没有被赋予任何用途的生物，在一座由功能生物构成、正在慢慢饿死的活体世界里，寻找「我是什么」。</p>
+    <p class="book-meta">三卷 · 三十四章 + 楔子<span class="dot">/</span>约 22.2 万字<span class="dot">/</span>已完结</p>
+  </a>
+
+  <footer>全部内容为原创作品，版权归作者所有。</footer>
+</main>
+</body>
+</html>

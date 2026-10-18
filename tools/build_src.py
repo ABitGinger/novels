@@ -7,8 +7,8 @@ import shutil
 from pathlib import Path
 
 NOVEL = Path(r"D:/AI/lab/5 novel/无职者/正文")
-SITE = Path(r"D:/Repositories/wuzhizhe")
-SRC = SITE / "src"
+SITE = Path(r"D:/Repositories/novels")
+SRC = SITE / "books" / "wuzhizhe" / "src"
 
 VOLUMES = [
     ("卷一_误", "卷一 · 误"),

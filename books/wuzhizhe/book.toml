@@ -9,11 +9,11 @@ build-dir = "book"
 create-missing = false
 
 [output.html]
-site-url = "/wuzhizhe/"
+site-url = "/novels/wuzhizhe/"
 default-theme = "light"
 preferred-dark-theme = "coal"
 no-section-label = true
-git-repository-url = "https://github.com/ABitGinger/wuzhizhe"
+git-repository-url = "https://github.com/ABitGinger/novels"
 additional-css = ["theme/book.css"]
 additional-js = ["theme/reading.js"]
 

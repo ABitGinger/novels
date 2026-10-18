@@ -1,59 +1,56 @@
-# 无职者
+# novels
 
-> 一部长篇小说。三卷，三十四章，另有楔子。
+原创长篇小说在线阅读站，GitHub Pages 托管。
 
-在线阅读：**https://abitinger.github.io/wuzhizhe/**
+**https://abitinger.github.io/novels/**
 
-一个被培育出来、却没有被赋予任何用途的生物，在一座由**功能生物**构成的、正在慢慢饿死的活体世界里，寻找「我是什么」。
+## 书架
 
-## 站点
+| 书 | 状态 | 篇幅 | 地址 |
+|---|---|---|---|
+| 《无职者》 | 完结 | 三卷 34 章 + 楔子，约 22.2 万字 | [/novels/wuzhizhe/](https://abitinger.github.io/novels/wuzhizhe/) |
 
-- 引擎：[mdBook](https://github.com/rust-lang/mdBook)（MPL-2.0），纯静态输出，无后端。
-- 主题：`theme/book.css`（纸感阅读配色、宋体正文、档案体文献排版）+ `theme/reading.js`（阅读进度条、章节分隔符、记住上次读到哪儿）。
-- 构建：推送 `main` 后由 GitHub Actions 自动构建并发布到 GitHub Pages。
-
-## 目录
+## 结构
 
 ```
 .
-├─ book.toml              mdBook 配置
-├─ src/
-│  ├─ README.md           首页（封面与简介）
-│  ├─ SUMMARY.md          目录
-│  ├─ 00_楔子.md
-│  ├─ 卷一_误/01_育.md … 12_过.md
-│  ├─ 卷二_器/01_膛.md … 12_记.md
-│  └─ 卷三_无/01_返.md … 10_余.md
-├─ theme/
-│  ├─ book.css
-│  └─ reading.js
+├─ site/index.html        书架首页（静态，加书时加一条 <a class="book">）
+├─ books/
+│  └─ wuzhizhe/          每本书一个 mdBook 项目
+│     ├─ book.toml
+│     ├─ src/
+│     └─ theme/
 ├─ tools/
-│  ├─ build_src.py        从正文目录生成 src/
-│  └─ home.md             首页模板
+│  ├─ build_src.py       从正文目录生成 src/
+│  └─ home.md            该书首页模板
 └─ .github/workflows/deploy.yml
 ```
 
-## 更新章节
+构建产物：`_site/<书名>/`，由 Actions 生成，不入库。
 
-`src/` 由 `tools/build_src.py` 从写作目录生成，不手改。生成时会做三件事：
+## 技术
 
-1. 补章节标题（章节文件本身以铭牌开篇，无标题行）；
-2. 把硬折行的段落接回一行（Markdown 软换行在中文里会多出空格）；
-3. 给铭牌各行补硬换行，保留档案排版。
+- [mdBook](https://github.com/rust-lang/mdBook)（MPL-2.0）——纯静态输出、自带目录/搜索/键盘翻页，无后端、无 npm 依赖。
+- 自定义主题 `books/*/theme/book.css`：纸感配色、宋体正文、档案体文献排版、阅读进度条、记住上次读到哪儿。
+
+## 加一本书
+
+1. `books/<slug>/` 放 `book.toml`、`src/`、`theme/`（可从 `books/wuzhizhe` 复制后改）；
+2. `book.toml` 里把 `site-url` 改为 `/novels/<slug>/`；
+3. `site/index.html` 里加一条 `<a class="book" href="./<slug>/">`；
+4. 推送 `main`，Actions 自动构建全部书并发布。
+
+## 更新《无职者》正文
+
+`books/wuzhizhe/src/` 由脚本从写作目录生成，不手改。脚本会做三件事：补章节标题、把硬折行的段落接回一行（Markdown 软换行在中文里会多出空格）、给铭牌各行补硬换行以保留档案排版。
 
 ```bash
-# 生成 src/（默认读取 D:/AI/lab/5 novel/无职者/正文，可在脚本顶部改 NOVEL）
-python tools/build_src.py
-
-# 本地预览
-mdbook serve --open
-
-# 构建
-mdbook build
+python tools/build_src.py                     # 生成 src/
+cd books/wuzhizhe && mdbook serve --open      # 本地预览
 ```
 
-mdBook 把 `html` 字号设为 62.5%（1rem = 10px），`theme/book.css` 统一用 px 标定，改样式时留意这一点。
+mdBook 把 `html` 字号设为 62.5%（1rem = 10px），主题 CSS 统一用 px 标定，改样式时留意这一点。
 
 ## 版权
 
-正文为原创作品，全部权利归作者所有。站点仅用于在线阅读。
+正文为原创作品，全部权利归作者所有。

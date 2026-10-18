@@ -1,4 +1,4 @@
-name: Deploy book
+name: Deploy site
 
 on:
   push:
@@ -25,8 +25,18 @@ jobs:
         with:
           mdbook-version: "0.4.40"
 
-      - name: Build
-        run: mdbook build
+      - name: Build books
+        run: |
+          set -e
+          for dir in books/*/; do
+            name=$(basename "$dir")
+            echo "::group::building $name"
+            (cd "$dir" && mdbook build -d "$GITHUB_WORKSPACE/_site/$name")
+            echo "::endgroup::"
+          done
+
+      - name: Assemble shelf
+        run: cp -r site/. _site/
 
       - uses: actions/configure-pages@v5
         with:
@@ -34,7 +44,7 @@ jobs:
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: ./book
+          path: ./_site
 
   deploy:
     needs: build

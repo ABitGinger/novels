@@ -1,7 +1,7 @@
 /* 《无职者》阅读增强
    · 主题 / 字号（可跟随系统）
    · 返回书房
-   · 章节跳转的载入反馈与预取
+   · 页内换页：站内章节只换正文、不重载整页（预取 + 路由缓存）
    · 阅读进度条、分隔符、记住读到哪儿
    注：主题的"防闪"引导脚本在 theme/head.hbs 里，先于本文件执行。
 */
@@ -64,6 +64,15 @@
       if (i >= 0) return p.slice(0, i + 1);
     }
     return "../";
+  }
+
+  /* ── 书根路径：判断"是否还在本书内"，页内路由要用 ─────────────────── */
+  function bookBase() {
+    var slug = meta("wzz:slug");
+    var p = location.pathname;
+    if (!slug) return null;
+    var i = p.indexOf("/" + slug + "/");
+    return i >= 0 ? p.slice(0, i + slug.length + 2) : null;
   }
 
   /* ── 主题 ─────────────────────────────────────────────────────────── */
@@ -249,6 +258,8 @@
   }
 
   /* ── 阅读进度条 ───────────────────────────────────────────────────── */
+  var progressUpdate = null; // 换页后由 router 调用，重算一次
+
   function progress() {
     var bar = document.createElement("div");
     bar.id = "read-progress";
@@ -260,6 +271,7 @@
       var r = h > 120 ? Math.min(1, Math.max(0, window.scrollY / h)) : 0;
       bar.style.width = (r * 100).toFixed(2) + "%";
     }
+    progressUpdate = update;
     window.addEventListener(
       "scroll",
       function () {
@@ -272,6 +284,310 @@
     );
     window.addEventListener("resize", update, { passive: true });
     update();
+  }
+
+  /* ── 页内路由：翻页只换正文，不重载整页 ──────────────────────────────
+     每一章共用同一套外壳（侧栏、顶栏、脚本），整页 reload 等于把几十 KB
+     的 HTML 重新解析一遍，慢网下还得白屏等一次。这里改成：取回目标页 →
+     只替换 #content（正文 + 上下页导航）→ pushState 改地址。
+     外壳、字号、主题、阅读进度原地不动，翻页只剩一次内容替换。
+  */
+  var pageCache = {};
+  var pageOrder = [];
+  var CACHE_MAX = 18;
+  var barTimer = null;
+  var navSeq = 0;
+  var prefetchNext = null; // 换页后重新预热"新的下一章"
+
+  function sameBook(u) {
+    var base = bookBase();
+    return !!base && u.origin === location.origin && u.pathname.indexOf(base) === 0;
+  }
+
+  function cached(u) {
+    return Object.prototype.hasOwnProperty.call(pageCache, u.pathname) ? pageCache[u.pathname] : null;
+  }
+
+  function cacheSet(u, html) {
+    var k = u.pathname;
+    if (!pageCache[k]) pageOrder.push(k);
+    pageCache[k] = html;
+    while (pageOrder.length > CACHE_MAX) delete pageCache[pageOrder.shift()];
+  }
+
+  function fetchPage(u) {
+    var hit = cached(u);
+    if (hit) return Promise.resolve(hit);
+    return fetch(u.href, { credentials: "same-origin" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.text();
+      })
+      .then(function (t) {
+        cacheSet(u, t);
+        return t;
+      });
+  }
+
+  function warm(u) {
+    if (!u || cached(u)) return;
+    fetchPage(u).catch(function () {});
+  }
+
+  /* 相对地址转绝对：换页后 location 变了，目录里的 ../ 就会指错 */
+  function absolutize(root, baseUrl) {
+    var names = ["href", "src"];
+    for (var n = 0; n < names.length; n++) {
+      var els = root.querySelectorAll("[" + names[n] + "]");
+      for (var i = 0; i < els.length; i++) {
+        var raw = els[i].getAttribute(names[n]);
+        if (!raw || raw.charAt(0) === "#") continue;
+        if (/^(?:[a-z][a-z0-9+.-]*:|\/\/)/i.test(raw)) continue;
+        try {
+          els[i].setAttribute(names[n], new URL(raw, baseUrl).href);
+        } catch (e) {}
+      }
+    }
+  }
+
+  function syncToc(u) {
+    var box = document.querySelector("#sidebar .chapter");
+    if (!box) return;
+    var links = box.querySelectorAll("a");
+    var hit = null;
+    for (var i = 0; i < links.length; i++) {
+      var link = links[i];
+      var on = false;
+      try {
+        on = new URL(link.getAttribute("href"), location.href).pathname === u.pathname;
+      } catch (e) {}
+      if (on) {
+        link.classList.add("active");
+        link.setAttribute("aria-current", "page");
+        hit = link;
+      } else {
+        link.classList.remove("active");
+        link.removeAttribute("aria-current");
+      }
+    }
+    if (!hit) return;
+    // 目录跟着滚一下，但别把正文带走（.sidebar-scrollbox 才是真正的滚动容器）
+    var sc = document.querySelector("#sidebar .sidebar-scrollbox");
+    if (!sc) return;
+    if (sc.scrollHeight <= sc.clientHeight + 4) return;
+    var ar = hit.getBoundingClientRect();
+    var sr = sc.getBoundingClientRect();
+    if (ar.top < sr.top + 48) sc.scrollTop -= sr.top + 48 - ar.top;
+    else if (ar.bottom > sr.bottom - 48) sc.scrollTop += ar.bottom - sr.bottom + 48;
+  }
+
+  function swap(html, u) {
+    var doc = new DOMParser().parseFromString(html, "text/html");
+    var next = doc.getElementById("content");
+    var cur = document.getElementById("content");
+    if (!next || !cur) return false;
+
+    // 整个 body 一起绝对化：桌面两侧的 .nav-wide-wrapper 在 #content 之外
+    absolutize(doc.body, u.href);
+    cur.innerHTML = next.innerHTML;
+
+    // 宽屏两侧那对悬浮箭头是 #content 的兄弟节点，得单独换
+    var nw = doc.querySelector(".nav-wide-wrapper");
+    var cw = document.querySelector(".nav-wide-wrapper");
+    if (nw && cw) cw.innerHTML = nw.innerHTML;
+
+    if (doc.title) document.title = doc.title;
+
+    var main = cur.querySelector("main");
+    if (main) {
+      decorate(main);
+      cur.classList.remove("wzz-swap");
+      void cur.offsetWidth; // 强制回流，动画才会重新播
+      cur.classList.add("wzz-swap");
+    }
+
+    syncToc(u);
+    buildFooter(); // 只有扉页会真的插入
+    homeResume(); // 扉页的「继续阅读」
+    if (prefetchNext) prefetchNext();
+    if (progressUpdate) progressUpdate();
+    return true;
+  }
+
+  function merge(o, k, v) {
+    var r = {};
+    var key;
+    for (key in o) if (Object.prototype.hasOwnProperty.call(o, key)) r[key] = o[key];
+    r[k] = v;
+    return r;
+  }
+
+  function barShow(pct) {
+    var b = document.getElementById("loadbar");
+    if (!b) return;
+    b.classList.add("on");
+    b.style.width = pct + "%";
+  }
+
+  function barDone() {
+    var b = document.getElementById("loadbar");
+    if (!b) return;
+    b.style.width = "100%";
+    b.classList.remove("on");
+    setTimeout(function () {
+      if (!b.classList.contains("on")) b.style.width = "0";
+    }, 340);
+  }
+
+  /* 扉页「继续阅读」点的是站内链接，也走页内路由，这里补上落点 */
+  function resumeHere(u) {
+    var want = null;
+    try {
+      want = sessionStorage.getItem(LS_RESUME);
+    } catch (e) {}
+    if (!want || want !== u.pathname) return false;
+    try {
+      sessionStorage.removeItem(LS_RESUME);
+    } catch (e) {}
+    var last = load(LS_LAST);
+    if (!last || last.path !== u.pathname || !(last.ratio > 0)) return false;
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    if (h < 200) return false;
+    window.scrollTo(0, last.ratio * h);
+    return true;
+  }
+
+  function go(u, opts) {
+    opts = opts || {};
+    var my = ++navSeq;
+    var y0 = window.scrollY;
+    if (!cached(u)) {
+      barTimer = setTimeout(function () {
+        barTimer = null;
+        barShow(14);
+      }, 150);
+    }
+    return fetchPage(u)
+      .then(function (html) {
+        if (my !== navSeq) return; // 连点时只认最后一次，别让旧结果盖回来
+        if (barTimer) {
+          clearTimeout(barTimer);
+          barTimer = null;
+        }
+        if (!opts.fromPop) {
+          if (saveProgress) saveProgress(); // 先把旧页读到哪儿记下来
+          try {
+            history.replaceState(merge(history.state || {}, "wzzY", y0), "");
+          } catch (e) {}
+          history.pushState({ wzz: 1, wzzY: 0 }, "", u.href);
+        }
+        if (!swap(html, u)) throw new Error("swap failed");
+        if (!opts.fromPop && resumeHere(u)) {
+          barDone();
+          return;
+        }
+        window.scrollTo(0, opts.fromPop ? opts.y || 0 : 0);
+        if (u.hash) {
+          var el = document.getElementById(decodeURIComponent(u.hash.slice(1)));
+          if (el) el.scrollIntoView();
+        }
+        barDone();
+        if (progressUpdate) progressUpdate();
+      })
+      .catch(function () {
+        if (my !== navSeq) return;
+        if (barTimer) {
+          clearTimeout(barTimer);
+          barTimer = null;
+        }
+        barDone();
+        // 出错就退回整页跳转：宁可慢一次，也不能把读者卡在原地
+        location.href = u.href;
+      });
+  }
+
+  function spaTarget(a, e) {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return null;
+    if (!a) return null;
+    var raw = a.getAttribute("href");
+    if (!raw || raw.charAt(0) === "#" || /^javascript:/i.test(raw)) return null;
+    if (a.target && a.target !== "_self") return null;
+    var u;
+    try {
+      u = new URL(a.href);
+    } catch (err) {
+      return null;
+    }
+    if (!sameBook(u)) return null;
+    if (u.pathname === location.pathname && u.search === location.search) return null;
+    return u;
+  }
+
+  function router() {
+    // 位置自己管：浏览器默认的滚动恢复会在 popstate 后覆盖我们的落点
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    try {
+      history.replaceState(merge(history.state || {}, "wzzY", window.scrollY), "");
+    } catch (e) {}
+
+    // 目录里的 href 是相对"当前页"写的，而页内换页只换正文、不换侧栏：
+    // 必须一次性钉成绝对地址，否则跨层级翻几页后每条目录链接都会算错基准。
+    var toc = document.querySelector("#sidebar .chapter");
+    if (toc) absolutize(toc, location.href);
+
+    document.addEventListener(
+      "click",
+      function (e) {
+        var u = spaTarget(closestLink(e.target), e);
+        if (!u) return;
+        e.preventDefault();
+        go(u);
+      },
+      true
+    );
+
+    // mdBook 的左右方向键是整页跳，这里接管成页内换页
+    document.addEventListener(
+      "keydown",
+      function (e) {
+        if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+        if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+        var t = e.target;
+        if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+        var rtl = document.documentElement.dir === "rtl";
+        var next = (e.key === "ArrowRight") !== rtl;
+        var a = document.querySelector(
+          next ? ".nav-chapters.next, .mobile-nav-chapters.next" : ".nav-chapters.previous, .mobile-nav-chapters.previous"
+        );
+        if (!a) return;
+        var u;
+        try {
+          u = new URL(a.href);
+        } catch (err) {
+          return;
+        }
+        if (!sameBook(u)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        go(u);
+      },
+      true
+    );
+
+    window.addEventListener("popstate", function (e) {
+      var u;
+      try {
+        u = new URL(location.href);
+      } catch (err) {
+        return;
+      }
+      if (!sameBook(u)) {
+        location.reload();
+        return;
+      }
+      var st = e.state || {};
+      go(u, { fromPop: true, y: st.wzzY || 0 });
+    });
   }
 
   /* ── 跳转反馈：进度条 + 载入提示 + 慢网提示 ───────────────────────── */
@@ -369,10 +685,14 @@
     function pf(url) {
       if (!url || seen[url]) return;
       seen[url] = 1;
-      var l = document.createElement("link");
-      l.rel = "prefetch";
-      l.href = url;
-      document.head.appendChild(l);
+      var u;
+      try {
+        u = new URL(url);
+      } catch (e) {
+        return;
+      }
+      if (!sameBook(u)) return;
+      warm(u); // 取回 HTML 存进路由缓存，点下去就是瞬开
     }
     function onHover(e) {
       var a = closestLink(e.target);
@@ -385,31 +705,40 @@
     document.addEventListener("touchstart", onHover, { passive: true });
 
     var next = document.querySelector(".nav-chapters.next, .mobile-nav-chapters.next");
-    if (next && next.href) {
+    // 页内换页后 DOM 全换了，下一章也跟着变，所以每次换页都要重新排一次
+    prefetchNext = function () {
+      var n = document.querySelector(".nav-chapters.next, .mobile-nav-chapters.next");
+      if (!n || !n.href) return;
       setTimeout(function () {
-        pf(next.href);
+        pf(n.href);
       }, 1500);
-    }
+    };
+    if (next && next.href) prefetchNext();
   }
 
   /* ── 记住读到哪儿 ─────────────────────────────────────────────────── */
-  function remember() {
-    var path = location.pathname;
-    var isHome = /\/$|\/index\.html$/.test(path);
-    var h = document.documentElement.scrollHeight - window.innerHeight;
-    if (isHome || h < 400) return;
+  var rememberBound = false;
+  var saveProgress = null; // 换页前保存旧页进度
 
-    var timer = null;
+  function remember() {
+    // 路径每次都现读：页内换页后 location 已经变了，不能缓存 boot 时的值
     function save() {
+      var path = location.pathname;
+      if (/\/$|\/index\.html$/.test(path)) return; // 扉页不记
       var hh = document.documentElement.scrollHeight - window.innerHeight;
-      var ratio = hh > 0 ? Math.min(1, Math.max(0, window.scrollY / hh)) : 0;
+      if (hh < 400) return;
       store(LS_LAST, {
         path: path,
         title: document.title.replace(/\s*-\s*无职者\s*$/, ""),
-        ratio: ratio,
+        ratio: Math.min(1, Math.max(0, window.scrollY / hh)),
         at: Date.now()
       });
     }
+    saveProgress = save;
+    if (rememberBound) return;
+    rememberBound = true;
+
+    var timer = null;
     window.addEventListener(
       "scroll",
       function () {
@@ -420,16 +749,22 @@
     );
     window.addEventListener("pagehide", save);
 
-    var want = sessionStorage.getItem(LS_RESUME);
-    if (want && want === path) {
+    // 整页载入（从书架点进来 / 刷新）时回到上次位置；页内换页走 resumeHere()
+    var path = location.pathname;
+    var want = null;
+    try {
+      want = sessionStorage.getItem(LS_RESUME);
+    } catch (e) {}
+    if (!want || want !== path) return;
+    try {
       sessionStorage.removeItem(LS_RESUME);
-      var last = load(LS_LAST);
-      if (last && last.path === path && last.ratio > 0) {
-        var target = last.ratio * h;
-        setTimeout(function () {
-          window.scrollTo({ top: target, behavior: "smooth" });
-        }, 220);
-      }
+    } catch (e) {}
+    var last = load(LS_LAST);
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    if (last && last.path === path && last.ratio > 0 && h > 200) {
+      setTimeout(function () {
+        window.scrollTo(0, last.ratio * h);
+      }, 220);
     }
   }
 
@@ -441,9 +776,13 @@
     if (!last || !last.path || !last.title) return;
     btn.textContent = "继续阅读 · " + last.title;
     btn.setAttribute("href", last.path);
+    // 页内换页回到扉页时这里会再跑一次，监听只绑一遍
+    if (btn.getAttribute("data-wzz-bound")) return;
+    btn.setAttribute("data-wzz-bound", "1");
     btn.addEventListener("click", function () {
+      // 现读 href：这个监听只绑一次，而目标章节会随阅读进度变
       try {
-        sessionStorage.setItem(LS_RESUME, last.path);
+        sessionStorage.setItem(LS_RESUME, new URL(btn.href).pathname);
       } catch (e) {}
     });
   }
@@ -459,14 +798,13 @@
     buildUI();
     buildShelfEntry();
     buildFooter();
+    router(); // 先于 navFeedback：页内换页要抢在"整页载入"反馈之前接管点击
     navFeedback();
     prefetch();
 
     var content = document.querySelector(".content main");
-    if (content) {
-      decorate(content);
-      remember();
-    }
+    if (content) decorate(content);
+    remember();
     homeResume();
     progress();
   }
